@@ -1,0 +1,90 @@
+version: '3.9'
+
+services:
+
+  dropdb:
+    container_name: drop_db
+    image: mysql:5.7
+    restart: always
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: toor
+      MYSQL_DATABASE: drop_db
+      MYSQL_USER: drop
+      MYSQL_PASSWORD: drop
+    ports:
+      - 33306:3306
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+    networks:
+      - drop-network
+
+  dropapp: 
+    image: wordpress:latest
+    container_name: drop_app 
+    restart: always
+    volumes:
+      - ./data/wp:/var/www/html 
+      - ./theme:/var/www/html/wp-content/themes/drop
+      - ./plugin:/var/www/html/wp-content/plugins/drop 
+      - ./custom.ini:/usr/local/etc/php/conf.d/custom.ini
+    depends_on:
+      - dropdb
+    links:
+      - dropdb
+    ports:
+      - 4545:80
+    environment:
+      WORDPRESS_DB_HOST: dropdb:3306
+      WORDPRESS_DB_USER: drop
+      WORDPRESS_DB_PASSWORD: drop
+      WORDPRESS_DB_NAME: drop_db
+      WORDPRESS_DEBUG: 1
+    networks:
+      - drop-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - dropdb
+    links:
+      - dropdb
+    ports:
+      - 8181:80
+    environment:
+      MYSQL_USERNAME: drop
+      MYSQL_ROOT_PASSWORD: drop
+      PMA_HOST: dropdb
+
+  # drop_nginx: 
+  #   container_name: drop_webserver
+  #   image: nginx:latest
+  #   volumes:
+  #     - ./nginx:/etc/nginx/conf.d
+  #     - ./data/html:/var/www/html
+  #     - ./logs/nginx:/var/log/nginx
+  #   ports:
+  #     - "3131:80"
+  #     #- "3131:80"
+  #   links:
+  #     - dropapp
+  #   networks:
+  #     - drop-network 
+
+  # phpmyadmin:
+  #   image: phpmyadmin/phpmyadmin
+  #   restart: always
+  #   links:
+  #     - dropdb:mysql
+  #   ports:
+  #     - "3132:80"
+  #   environment:
+  #     PMA_HOST: dropdb
+  #     MYSQL_ROOT_PASSWORD: toor
+  #   networks:
+  #     - drop-network
+
+networks:
+  drop-network:
+volumes:
+  db_data:
